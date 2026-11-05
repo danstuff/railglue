@@ -2,7 +2,7 @@
 # Installs the app's mise tools and gems, then runs the given command.
 set -euo pipefail
 
-mise install
+flock /mise/.install.lock mise install
 if ! mise which ruby > /dev/null 2>&1; then
   echo "railglue: no Ruby version for ${RAILGLUE_APP:-this app};" \
        "add .ruby-version or mise.toml" >&2
