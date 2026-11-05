@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Prepares the development database and serves the app on $PORT.
+set -euo pipefail
+
+rm -f tmp/pids/server.pid
+bin/rails db:prepare
+exec bin/rails server -b 0.0.0.0 -p "$PORT" \
+  -c /usr/local/share/railglue/config.ru

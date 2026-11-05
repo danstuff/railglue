@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Runs the app's rspec suite against its own test database.
+set -euo pipefail
+
+export RAILS_ENV=test
+unset RAILS_RELATIVE_URL_ROOT
+if [[ -n "${RAILGLUE_TEST_DATABASE_URL:-}" ]]; then
+  export DATABASE_URL="$RAILGLUE_TEST_DATABASE_URL"
+fi
+bin/rails db:prepare
+exec bundle exec rspec "$@"
