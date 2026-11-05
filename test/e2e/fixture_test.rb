@@ -28,6 +28,15 @@ class FixtureTest < Minitest::Test
     end
   end
 
+  def test_redis_apps_use_their_own_redis_db
+    each_homepage do |app, body|
+      next unless app.redis
+
+      db = Railglue::Databases.redis_url(app, 'development')[/\d+\z/]
+      assert_includes body, "Redis: PONG db#{db}", app.name
+    end
+  end
+
   def test_rspec_passes_in_each_app
     E2E.config.apps.each do |app|
       assert_equal 0, E2E.cli('rspec', app.name), "rspec failed: #{app.name}"

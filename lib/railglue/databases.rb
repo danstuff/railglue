@@ -4,6 +4,7 @@ module Railglue
   # Shared database servers and the Rails adapters that connect to them.
   module Databases
     PASSWORD = 'railglue'
+    REDIS_ENVS = %w[development test].freeze
 
     SERVICES = {
       'postgres' => {
@@ -20,6 +21,14 @@ module Railglue
         'environment' => { 'MYSQL_ROOT_PASSWORD' => PASSWORD },
         'healthcheck' =>
           %W[CMD mysqladmin ping -h 127.0.0.1 -uroot -p#{PASSWORD}]
+      },
+      'redis' => {
+        'port' => 6379,
+        'data' => '/data',
+        'command' => %W[redis-server --requirepass #{PASSWORD}
+                        --databases #{MAX_APPS * REDIS_ENVS.size}],
+        'healthcheck' => %W[CMD redis-cli --no-auth-warning -a #{PASSWORD}
+                            ping]
       }
     }.freeze
 
@@ -36,6 +45,15 @@ module Railglue
       ENGINES.fetch(app.database)['service']
     end
 
+    def services_for(app)
+      [service_for(app), app.redis ? 'redis' : nil].compact
+    end
+
+    def redis_url(app, env)
+      number = app.index * REDIS_ENVS.size + REDIS_ENVS.index(env)
+      "redis://:#{PASSWORD}@redis:#{SERVICES['redis']['port']}/#{number}"
+    end
+
     def url(app, env)
       engine = ENGINES.fetch(app.database)
       return nil unless engine['service']
@@ -49,15 +67,15 @@ module Railglue
       server = SERVICES.fetch(name)
       {
         'image' => image,
+        'command' => server['command'],
         'environment' => server['environment'],
         'volumes' => ["#{name}:#{server['data']}"],
-        'healthcheck' => {
-          'test' => server['healthcheck'],
-          'interval' => '2s',
-          'timeout' => '5s',
-          'retries' => 60
-        }
-      }
+        'healthcheck' => healthcheck(server['healthcheck'])
+      }.compact
+    end
+
+    def healthcheck(test)
+      { 'test' => test, 'interval' => '2s', 'timeout' => '5s', 'retries' => 60 }
     end
   end
 end

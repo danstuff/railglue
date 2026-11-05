@@ -25,19 +25,19 @@ module Railglue
     def services(config)
       result = { 'nginx' => nginx_service(config) }
       config.apps.each { |app| result[app.name] = app_service(config, app) }
-      database_services(config).each do |name|
+      backing_services(config).each do |name|
         result[name] = Databases.compose_service(name, config.image(name))
       end
       result
     end
 
-    def database_services(config)
-      config.apps.filter_map { |app| Databases.service_for(app) }.uniq
+    def backing_services(config)
+      config.apps.flat_map { |app| Databases.services_for(app) }.uniq
     end
 
     def volumes(config)
       names = ['mise'] + config.apps.map { |app| bundle_volume(app) } +
-              database_services(config)
+              backing_services(config)
       names.to_h { |name| [name, {}] }
     end
 
@@ -65,13 +65,13 @@ module Railglue
         'stdin_open' => true,
         'tty' => true
       }
-      database = Databases.service_for(app)
-      service['depends_on'] = healthy(database) if database
+      needs = Databases.services_for(app)
+      service['depends_on'] = healthy(needs) unless needs.empty?
       service
     end
 
-    def healthy(service)
-      { service => { 'condition' => 'service_healthy' } }
+    def healthy(services)
+      services.to_h { |name| [name, { 'condition' => 'service_healthy' }] }
     end
 
     def build_spec
@@ -92,7 +92,16 @@ module Railglue
         'RAILGLUE_MOUNT_PATH' => app.mount
       }
       env['RAILS_RELATIVE_URL_ROOT'] = app.mount unless app.root?
-      database_environment(app).merge(env)
+      database_environment(app).merge(redis_environment(app), env)
+    end
+
+    def redis_environment(app)
+      return {} unless app.redis
+
+      {
+        'REDIS_URL' => Databases.redis_url(app, 'development'),
+        'RAILGLUE_TEST_REDIS_URL' => Databases.redis_url(app, 'test')
+      }
     end
 
     def database_environment(app)

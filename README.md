@@ -3,7 +3,7 @@
 Run several Rails apps side by side on one `localhost`, as if they were
 one app. Each app gets its own container, its tools come from
 [mise](https://mise.jdx.dev/), nginx routes URL prefixes to apps, and all
-databases share one PostgreSQL and/or MySQL server.
+databases share one PostgreSQL and/or MySQL server, plus one Redis server.
 
 ## Requirements
 
@@ -49,6 +49,9 @@ another config file.
   `<name>_development` on the shared server (PostgreSQL unless the app
   sets `database`). `rspec` switches to `<name>_test`. `db:prepare`
   creates both as needed.
+- **Redis.** Apps with `redis: true` get `REDIS_URL`. Each app has its
+  own Redis database number for development and another for tests,
+  based on its position in `apps:`. Reordering the list reassigns them.
 - **Browsers.** The image includes Chromium and chromedriver, with the
   flags it needs to run inside a container.
   `driven_by :selenium, using: :headless_chrome` (or Cuprite) works
@@ -67,16 +70,18 @@ rake test:fixtures   # boot 3 fixture apps; check routing, DBs, rspec
 ```
 
 `test:fixtures` uses `test/fixtures/railglue.yml`: two PostgreSQL apps at
-`/` and `/beta`, plus a MySQL app at `/gamma`, served on port 3999. It
-also runs each app's request specs and a Capybara system spec. Set
-`RAILGLUE_E2E_KEEP=1` to leave the stack running afterwards.
+`/` and `/beta` (beta also uses Redis), plus a MySQL app at `/gamma`,
+served on port 3999. It also runs each app's request specs and a
+Capybara system spec. Set `RAILGLUE_E2E_KEEP=1` to leave the stack
+running afterwards.
 
 ## Security notes
 
 This is a development environment only.
 
-- The database superusers use the fixed password `railglue`. Database
-  ports aren't published, and nginx listens only on `127.0.0.1`.
+- The database superusers and Redis use the fixed password `railglue`.
+  Database and Redis ports are never published to the host; only the
+  apps can reach them. nginx listens only on `127.0.0.1`.
 - The image installs mise with `curl https://mise.run | sh`. The version
   is pinned (`MISE_VERSION`), but the build trusts that script.
 - Chromium runs with `--no-sandbox` because its sandbox can't start in an

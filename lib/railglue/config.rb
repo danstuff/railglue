@@ -11,11 +11,14 @@ module Railglue
   DEFAULT_IMAGES = {
     'nginx' => 'nginx:1.28-alpine',
     'postgres' => 'postgres:18',
-    'mysql' => 'mysql:8.4'
+    'mysql' => 'mysql:8.4',
+    'redis' => 'redis:8-alpine'
   }.freeze
 
   # One Rails app: where its code lives and where nginx mounts it.
-  App = Struct.new(:name, :path, :mount, :database, keyword_init: true) do
+  App = Struct.new(
+    :name, :path, :mount, :database, :redis, :index, keyword_init: true
+  ) do
     def root?
       mount == '/'
     end

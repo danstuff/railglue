@@ -8,6 +8,7 @@ apps:
   - name: beta
     path: test/fixtures/apps/beta
     mount: /beta
+    redis: true
   - name: gamma
     path: test/fixtures/apps/gamma
     mount: /gamma

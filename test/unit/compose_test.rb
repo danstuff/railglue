@@ -10,7 +10,8 @@ class ComposeTest < Minitest::Test
   end
 
   def test_one_service_per_app_and_database
-    assert_equal %w[nginx shop admin blog postgres mysql], @services.keys
+    assert_equal %w[nginx shop admin blog postgres redis mysql],
+                 @services.keys
     assert_equal 'railglue', @compose['name']
   end
 
@@ -52,14 +53,32 @@ class ComposeTest < Minitest::Test
                  @services['blog']['depends_on'])
   end
 
+  def test_redis_environment_only_when_enabled
+    env = @services['admin']['environment']
+    assert_equal 'redis://:railglue@redis:6379/2', env['REDIS_URL']
+    assert_equal 'redis://:railglue@redis:6379/3',
+                 env['RAILGLUE_TEST_REDIS_URL']
+    refute_includes @services['shop']['environment'].keys, 'REDIS_URL'
+  end
+
+  def test_app_waits_for_every_backing_service
+    assert_equal %w[postgres redis], @services['admin']['depends_on'].keys
+  end
+
+  def test_backing_services_publish_no_ports
+    %w[postgres redis mysql].each do |name|
+      refute @services[name].key?('ports'), name
+    end
+  end
+
   def test_apps_share_one_image
     images = %w[shop admin blog].map { |name| @services[name]['image'] }
     assert_equal ['railglue-app'], images.uniq
   end
 
   def test_named_volumes
-    assert_equal %w[mise bundle-shop bundle-admin bundle-blog postgres mysql],
-                 @compose['volumes'].keys
+    assert_equal %w[mise bundle-shop bundle-admin bundle-blog postgres
+                    redis mysql], @compose['volumes'].keys
   end
 
   def test_render_is_valid_yaml

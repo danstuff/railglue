@@ -53,7 +53,7 @@ class ConfigLoaderTest < Minitest::Test
   def test_unknown_keys
     assert_invalid 'unknown key(s) in config: extra', extra: 1
     assert_invalid 'apps[0]: colour', apps: [app('colour' => 'red')]
-    assert_invalid 'unknown key(s) in images', images: { 'redis' => 'r' }
+    assert_invalid 'unknown key(s) in images', images: { 'memcached' => 'm' }
   end
 
   def test_bad_names
@@ -74,6 +74,17 @@ class ConfigLoaderTest < Minitest::Test
 
   def test_database_defaults_to_postgresql
     assert_equal 'postgresql', parse.find_app('admin').database
+  end
+
+  def test_redis_is_opt_in
+    assert parse.find_app('admin').redis
+    refute parse.find_app('shop').redis
+    assert_invalid 'redis must be true or false',
+                   apps: [app('redis' => 'yes')]
+  end
+
+  def test_apps_remember_their_position
+    assert_equal [0, 1, 2], parse.apps.map(&:index)
   end
 
   def test_duplicates

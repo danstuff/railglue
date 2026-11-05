@@ -3,8 +3,9 @@
 require_relative '../test_helper'
 
 class DatabasesTest < Minitest::Test
-  def app(database, name: 'my-app')
-    Railglue::App.new(name: name, database: database)
+  def app(database, name: 'my-app', redis: false, index: 0)
+    Railglue::App.new(name: name, database: database, redis: redis,
+                      index: index)
   end
 
   def test_postgres_url
@@ -22,6 +23,35 @@ class DatabasesTest < Minitest::Test
   def test_sqlite_needs_no_server
     assert_nil Railglue::Databases.service_for(app('sqlite3'))
     assert_nil Railglue::Databases.url(app('sqlite3'), 'test')
+  end
+
+  def test_services_for
+    assert_equal %w[postgres redis],
+                 Railglue::Databases.services_for(app('postgresql',
+                                                      redis: true))
+    assert_equal [], Railglue::Databases.services_for(app('sqlite3'))
+  end
+
+  def test_redis_urls_give_each_app_and_env_its_own_db
+    third = app('sqlite3', redis: true, index: 2)
+    assert_equal 'redis://:railglue@redis:6379/4',
+                 Railglue::Databases.redis_url(third, 'development')
+    assert_equal 'redis://:railglue@redis:6379/5',
+                 Railglue::Databases.redis_url(third, 'test')
+  end
+
+  def test_redis_has_enough_databases_for_every_app
+    command = Railglue::Databases::SERVICES['redis']['command']
+    count = Integer(command[command.index('--databases') + 1])
+    last = app('sqlite3', index: Railglue::MAX_APPS - 1)
+    last_db = Integer(Railglue::Databases.redis_url(last, 'test')[/\d+\z/])
+    assert_operator last_db, :<, count
+  end
+
+  def test_redis_service_requires_password
+    service = Railglue::Databases.compose_service('redis', 'redis:8')
+    assert_includes service['command'], '--requirepass'
+    refute service.key?('environment')
   end
 
   def test_compose_service

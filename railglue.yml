@@ -5,6 +5,7 @@
 # images:                  # override the shared service images
 #   postgres: postgres:18
 #   mysql: mysql:8.4
+#   redis: redis:8-alpine
 #   nginx: nginx:1.28-alpine
 #
 # Each app is a git submodule. Keys:
@@ -12,10 +13,12 @@
 #   path:     defaults to apps/<name>
 #   mount:    URL path prefix, "/" for the root (defaults to /<name>)
 #   database: postgresql (default), mysql2, trilogy or sqlite3
+#   redis:    true to get REDIS_URL for a private Redis DB (default false)
 #
 # apps:
 #   - name: storefront
 #     mount: /
+#     redis: true
 #   - name: admin
 #   - name: blog
 #     database: mysql2

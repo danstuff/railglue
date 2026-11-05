@@ -6,7 +6,7 @@ module Railglue
   # Reads railglue.yml and turns it into a validated Config.
   module ConfigLoader
     TOP_KEYS = %w[project port images apps].freeze
-    APP_KEYS = %w[name path mount database].freeze
+    APP_KEYS = %w[name path mount database redis].freeze
     PROJECT_FORMAT = /\A[a-z0-9][a-z0-9_-]{0,62}\z/.freeze
     NAME_FORMAT = /\A[a-z][a-z0-9_-]{0,30}\z/.freeze
     MOUNT_FORMAT = %r{\A/([A-Za-z0-9_-]+(/[A-Za-z0-9_-]+)*)?\z}.freeze
@@ -72,7 +72,9 @@ module Railglue
         name: name,
         path: File.expand_path(raw.fetch('path', "apps/#{name}"), ROOT),
         mount: raw.fetch('mount', "/#{name}"),
-        database: raw.fetch('database', 'postgresql')
+        database: raw.fetch('database', 'postgresql'),
+        redis: raw.fetch('redis', false),
+        index: index
       )
     end
 
@@ -111,10 +113,13 @@ module Railglue
       unless app.mount.is_a?(String) && MOUNT_FORMAT.match?(app.mount)
         raise ConfigError, "#{app.name}: mount must look like / or /a/b"
       end
-      return if Databases::ENGINES.key?(app.database)
+      unless Databases::ENGINES.key?(app.database)
+        raise ConfigError, "#{app.name}: database must be one of " \
+                           "#{Databases::ENGINES.keys.join(', ')}"
+      end
+      return if [true, false].include?(app.redis)
 
-      raise ConfigError, "#{app.name}: database must be one of " \
-                         "#{Databases::ENGINES.keys.join(', ')}"
+      raise ConfigError, "#{app.name}: redis must be true or false"
     end
 
     def check_unique(values, field)
