@@ -1,0 +1,11 @@
+default: &default
+  adapter: mysql2
+  encoding: utf8mb4
+
+development:
+  <<: *default
+  database: gamma_development
+
+test:
+  <<: *default
+  database: gamma_test
