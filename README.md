@@ -46,8 +46,9 @@ another config file.
   routes and URL helpers include it. You don't have to change the app.
   `RAILS_RELATIVE_URL_ROOT` is set too, for asset paths.
 - **Databases.** Each app gets `DATABASE_URL` pointing at
-  `<name>_development` on the shared server. `rspec` switches to
-  `<name>_test`. `db:prepare` creates both as needed.
+  `<name>_development` on the shared server (PostgreSQL unless the app
+  sets `database`). `rspec` switches to `<name>_test`. `db:prepare`
+  creates both as needed.
 - **Browsers.** The image includes Chromium and chromedriver, with the
   flags it needs to run inside a container.
   `driven_by :selenium, using: :headless_chrome` (or Cuprite) works

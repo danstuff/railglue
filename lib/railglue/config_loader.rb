@@ -72,7 +72,7 @@ module Railglue
         name: name,
         path: File.expand_path(raw.fetch('path', "apps/#{name}"), ROOT),
         mount: raw.fetch('mount', "/#{name}"),
-        database: raw['database']
+        database: raw.fetch('database', 'postgresql')
       )
     end
 

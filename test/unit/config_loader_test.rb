@@ -70,7 +70,10 @@ class ConfigLoaderTest < Minitest::Test
 
   def test_bad_database
     assert_invalid 'database must be one of', apps: [app('database' => 'x')]
-    assert_invalid 'database must be one of', apps: [{ 'name' => 'x' }]
+  end
+
+  def test_database_defaults_to_postgresql
+    assert_equal 'postgresql', parse.find_app('admin').database
   end
 
   def test_duplicates

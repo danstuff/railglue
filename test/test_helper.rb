@@ -8,7 +8,7 @@ require_relative '../lib/railglue'
 module TestConfig
   APPS = [
     { 'name' => 'shop', 'mount' => '/', 'database' => 'postgresql' },
-    { 'name' => 'admin', 'database' => 'postgresql' },
+    { 'name' => 'admin' },
     { 'name' => 'blog', 'mount' => '/news/blog', 'database' => 'mysql2' }
   ].freeze
 

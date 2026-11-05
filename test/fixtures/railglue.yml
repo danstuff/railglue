@@ -5,11 +5,9 @@ apps:
   - name: alpha
     path: test/fixtures/apps/alpha
     mount: /
-    database: postgresql
   - name: beta
     path: test/fixtures/apps/beta
     mount: /beta
-    database: postgresql
   - name: gamma
     path: test/fixtures/apps/gamma
     mount: /gamma
